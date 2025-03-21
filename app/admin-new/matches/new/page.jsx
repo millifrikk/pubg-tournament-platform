@@ -14,6 +14,7 @@ export default function CreateMatchPage() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [existingMatches, setExistingMatches] = useState([]);
 
   // Check if user is authenticated and admin
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function CreateMatchPage() {
         const tournamentResult = await tournamentResponse.json();
         
         if (!tournamentResult.success) {
-          throw new Error(tournamentResult.error.message || 'Failed to fetch tournaments');
+          throw new Error(tournamentResult.error?.message || 'Failed to fetch tournaments');
         }
         
         // Fetch teams
@@ -43,7 +44,15 @@ export default function CreateMatchPage() {
         const teamResult = await teamResponse.json();
         
         if (!teamResult.success) {
-          throw new Error(teamResult.error.message || 'Failed to fetch teams');
+          throw new Error(teamResult.error?.message || 'Failed to fetch teams');
+        }
+        
+        // Fetch existing matches to show for reference
+        const matchesResponse = await fetch('/api/admin/matches');
+        const matchesResult = await matchesResponse.json();
+        
+        if (matchesResult.success && matchesResult.data?.data) {
+          setExistingMatches(matchesResult.data.data);
         }
         
         setTournaments(tournamentResult.data);
@@ -64,6 +73,8 @@ export default function CreateMatchPage() {
   // Handle form submission
   const handleSubmit = async (data) => {
     try {
+      console.log('Submitting to API:', data);
+      
       const response = await fetch('/api/admin/matches', {
         method: 'POST',
         headers: {
@@ -75,13 +86,17 @@ export default function CreateMatchPage() {
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error.message || 'Failed to create match');
+        console.error('Error details:', result.error);
+        // Just return the error message instead of throwing
+        return result.error?.message || 'Failed to create match';
       }
       
       // Redirect to match list on success
       router.push('/admin-new/matches');
+      return null; // No error
     } catch (err) {
-      throw new Error(err.message || 'An error occurred while creating the match');
+      console.error('Match creation error:', err);
+      return err.message || 'An error occurred while creating the match';
     }
   };
 
@@ -111,12 +126,42 @@ export default function CreateMatchPage() {
             <div className="animate-pulse">Loading form data...</div>
           </div>
         ) : (
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <MatchForm 
-              tournaments={tournaments} 
-              teams={teams} 
-              onSubmit={handleSubmit} 
-            />
+          <div className="space-y-6">
+            {/* Show existing matches for reference */}
+            {existingMatches.length > 0 && (
+              <div className="bg-gray-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-semibold mb-2">Existing Matches (For Reference)</h3>
+                <p className="text-sm text-gray-300 mb-4">Note: You cannot create a match with the same tournament, round, and match number as an existing match.</p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b border-gray-600">
+                      <th className="py-2">Tournament</th>
+                      <th className="py-2">Round</th>
+                      <th className="py-2">Match #</th>
+                      <th className="py-2">Teams</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {existingMatches.map(match => (
+                      <tr key={match.id} className="border-b border-gray-700">
+                        <td className="py-2">{match.tournament?.name}</td>
+                        <td className="py-2">{match.round}</td>
+                        <td className="py-2">{match.matchNumber}</td>
+                        <td className="py-2">{match.team1?.name} vs. {match.team2?.name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="bg-gray-800 p-6 rounded-lg">
+              <MatchForm 
+                tournaments={tournaments} 
+                teams={teams} 
+                onSubmit={handleSubmit} 
+              />
+            </div>
           </div>
         )}
       </div>

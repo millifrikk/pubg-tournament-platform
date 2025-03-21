@@ -59,15 +59,18 @@ enum TournamentStatus {
 }
 
 model Team {
-  id            String      @id @default(cuid())
-  name          String
-  slug          String      @unique
-  logo          String?
-  description   String?     @db.Text
-  players       Player[]
-  tournaments   TournamentTeam[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  name              String
+  slug              String      @unique
+  logo              String?
+  description       String?     @db.Text
+  players           Player[]
+  tournaments       TournamentTeam[]
+  team1Matches      Match[]     @relation("Team1Matches")
+  team2Matches      Match[]     @relation("Team2Matches")
+  wonMatches        Match[]     @relation("WinnerMatches")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([slug])
 }
@@ -104,20 +107,26 @@ model Match {
   tournamentId   String
   round          Int
   matchNumber    Int
-  team1Id        String?
-  team2Id        String?
-  team1Score     Int?
-  team2Score     Int?
+  team1          Team          @relation("Team1Matches", fields: [team1Id], references: [id])
+  team1Id        String
+  team2          Team          @relation("Team2Matches", fields: [team2Id], references: [id])
+  team2Id        String
+  team1Score     Int?          // Keep nullable for now
+  team2Score     Int?          // Keep nullable for now
+  winner         Team?         @relation("WinnerMatches", fields: [winnerId], references: [id])
   winnerId       String?
-  status         MatchStatus   @default(SCHEDULED)
+  status         String        @default("scheduled") // scheduled, in_progress, completed, cancelled
   scheduledDate  DateTime?
   completedDate  DateTime?
   playerStats    PlayerStats[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@unique([tournamentId, round, matchNumber])
   @@index([tournamentId])
   @@index([status])
+  @@index([team1Id])
+  @@index([team2Id])
 }
 
 enum MatchStatus {

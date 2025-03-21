@@ -80,18 +80,27 @@ export default function AdminMatchesPage() {
           queryParams.append('status', selectedStatus);
         }
         
+        console.log('Fetching matches with URL:', `/api/admin/matches?${queryParams.toString()}`);
+        
         const response = await fetch(`/api/admin/matches?${queryParams.toString()}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
+        }
+        
         const result = await response.json();
         
         if (result.success) {
+          console.log('Received matches:', result.data);
           setMatches(result.data.data);
           setTotalPages(result.data.pagination.totalPages);
         } else {
-          setError(result.error.message || 'Failed to fetch matches');
+          setError(result.error?.message || 'Failed to fetch matches');
           console.error('Error fetching matches:', result.error);
         }
       } catch (err) {
-        setError('An error occurred while fetching matches');
+        setError(err.message || 'An error occurred while fetching matches');
         console.error('Failed to fetch matches:', err);
       } finally {
         setLoading(false);

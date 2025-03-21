@@ -19,6 +19,9 @@ const matchFormSchema = z.object({
   }),
   scheduledDate: z.string().optional(),
   status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]),
+}).refine(data => data.team1Id !== data.team2Id, {
+  message: "Team 1 and Team 2 cannot be the same team",
+  path: ["team2Id"],
 });
 
 /**
@@ -87,14 +90,33 @@ const MatchForm = ({ match, tournaments = [], teams = [], onSubmit }) => {
       setIsSubmitting(true);
       setError("");
       
-      await onSubmit(data);
+      // Format the date properly if provided
+      if (data.scheduledDate) {
+        // Make sure it's in ISO format
+        const date = new Date(data.scheduledDate);
+        if (isNaN(date.getTime())) {
+          throw new Error("Invalid date format");
+        }
+        data.scheduledDate = date.toISOString();
+      }
+      
+      console.log('Submitting match data:', data);
+      
+      // onSubmit now returns error message or null
+      const errorMessage = await onSubmit(data);
+      
+      if (errorMessage) {
+        setError(errorMessage);
+        return;
+      }
       
       if (!isEditMode) {
         reset();
       }
       
-      // Redirect or show success message
+      // Redirect or show success message handled by the parent
     } catch (err) {
+      console.error('Form submission error:', err);
       setError(err.message || "Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -104,8 +126,9 @@ const MatchForm = ({ match, tournaments = [], teams = [], onSubmit }) => {
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {error && (
-        <div className="bg-red-700 text-white p-4 rounded">
-          {error}
+        <div className="bg-red-700 text-white p-4 rounded mb-6">
+          <div className="font-bold mb-1">Error</div>
+          <div>{error}</div>
         </div>
       )}
       

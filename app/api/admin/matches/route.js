@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/auth/index";
 import { getMatches, createMatch } from "@/lib/data/match";
 
 // Schema for match creation
@@ -25,6 +25,9 @@ const createMatchSchema = z.object({
   scheduledDate: z.string().datetime().optional(),
   status: z.enum(["scheduled", "in_progress", "completed", "cancelled"])
     .default("scheduled"),
+}).refine(data => data.team1Id !== data.team2Id, {
+  message: "Team 1 and Team 2 cannot be the same team",
+  path: ["team2Id"],
 });
 
 // GET /api/admin/matches - List all matches
@@ -46,6 +49,8 @@ export async function GET(request) {
     const tournamentId = searchParams.get("tournamentId");
     const status = searchParams.get("status");
     const teamId = searchParams.get("teamId");
+
+    console.log("Fetching matches with params:", { page, limit, tournamentId, status, teamId });
 
     // Get matches with filtering
     const result = await getMatches({
@@ -95,13 +100,31 @@ export async function POST(request) {
         validatedData.scheduledDate = new Date(validatedData.scheduledDate);
       }
 
-      // Create the match
-      const match = await createMatch(validatedData);
+  // Create the match
+      try {
+        const match = await createMatch(validatedData);
 
-      return NextResponse.json(
-        { success: true, data: match },
-        { status: 201 }
-      );
+        return NextResponse.json(
+          { success: true, data: match },
+          { status: 201 }
+        );
+      } catch (createError) {
+        // Check for unique constraint violation
+        if (createError.code === 'P2002') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                message: "A match with this tournament, round, and match number already exists",
+                details: "Please use a different combination",
+              },
+            },
+            { status: 409 } // Conflict
+          );
+        }
+        
+        throw createError; // Re-throw other errors
+      }
     } catch (validationError) {
       return NextResponse.json(
         {

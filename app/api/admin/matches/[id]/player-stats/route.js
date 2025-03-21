@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/auth/index";
 import { getMatch } from "@/lib/data/match";
 import { getMatchPlayerStats, bulkUpsertPlayerStats } from "@/lib/data/playerStats";
 

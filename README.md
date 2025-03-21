@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PUBG Tournament Platform
+
+A comprehensive web application for managing, displaying, and interacting with PUBG esports tournaments.
+
+## Features
+
+- Tournament management
+- Team and player registration
+- Interactive tournament brackets
+- Match scheduling and reporting
+- Advanced statistics tracking
+- User profiles and following system
+
+## Technology Stack
+
+- **Frontend**: Next.js 15, React 19, TailwindCSS 4
+- **Backend**: Next.js API Routes
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+
+- PostgreSQL database
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/pubg-tournament-platform.git
+   cd pubg-tournament-platform
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. Set up environment variables
+   - Copy `.env.example` to `.env` (if not already done)
+   - Update the `DATABASE_URL` with your PostgreSQL connection details
+   - Generate a secure `NEXTAUTH_SECRET` (you can use `openssl rand -base64 32`)
 
-To learn more about Next.js, take a look at the following resources:
+4. Set up the database
+   ```bash
+   # Generate Prisma client
+   npm run prisma:generate
+   
+   # Run migrations
+   npm run prisma:migrate
+   
+   # Seed the database with sample data
+   npm run prisma:seed
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. Start the development server
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Deploy on Vercel
+### Default Users
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+After seeding, you can log in with these credentials:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Admin User**
+  - Email: admin@example.com
+  - Password: admin123
+
+- **Regular User**
+  - Email: user@example.com
+  - Password: user123
+
+## Development Workflow
+
+1. Create a feature branch from `develop`
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and commit them
+   ```bash
+   git add .
+   git commit -m "Add feature description"
+   ```
+
+3. Push your changes and create a pull request
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+## Project Structure
+
+- `/app` - Next.js App Router pages
+- `/components` - React components
+- `/hooks` - Custom React hooks
+- `/lib` - Utility functions and services
+- `/prisma` - Prisma ORM schema and migrations
+- `/providers` - React context providers
+- `/public` - Static assets
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- PUBG for the inspiration
+- All contributors to this project

@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  password      String?     // Hashed password
+  image         String?     // Avatar URL
+  role          UserRole    @default(USER)
+  followings    Following[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([email])
+}
+
+enum UserRole {
+  ADMIN
+  ORGANIZER
+  TEAM_MANAGER
+  USER
+}
+
+model Tournament {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  description   String?     @db.Text
+  startDate     DateTime
+  endDate       DateTime
+  status        TournamentStatus
+  bannerImage   String?
+  prizePool     String?
+  rules         String?     @db.Text
+  matches       Match[]
+  teams         TournamentTeam[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model Team {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  logo          String?
+  description   String?     @db.Text
+  players       Player[]
+  tournaments   TournamentTeam[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([slug])
+}
+
+model TournamentTeam {
+  id            String      @id @default(cuid())
+  tournament    Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId  String
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId        String
+  createdAt     DateTime    @default(now())
+
+  @@unique([tournamentId, teamId])
+  @@index([tournamentId])
+  @@index([teamId])
+}
+
+model Player {
+  id            String       @id @default(cuid())
+  name          String
+  ingameId      String
+  team          Team?        @relation(fields: [teamId], references: [id])
+  teamId        String?
+  stats         PlayerStats[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([teamId])
+}
+
+model Match {
+  id             String        @id @default(cuid())
+  tournament     Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId   String
+  round          Int
+  matchNumber    Int
+  team1Id        String?
+  team2Id        String?
+  team1Score     Int?
+  team2Score     Int?
+  winnerId       String?
+  status         MatchStatus   @default(SCHEDULED)
+  scheduledDate  DateTime?
+  completedDate  DateTime?
+  playerStats    PlayerStats[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([tournamentId])
+  @@index([status])
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model PlayerStats {
+  id           String       @id @default(cuid())
+  match        Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId      String
+  player       Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId     String
+  kills        Int          @default(0)
+  deaths       Int          @default(0)
+  assists      Int          @default(0)
+  damage       Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([matchId])
+  @@index([playerId])
+}
+
+model Following {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  entityType  EntityType
+  entityId    String
+  createdAt   DateTime      @default(now())
+
+  @@unique([userId, entityType, entityId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}
+
+enum EntityType {
+  TOURNAMENT
+  TEAM
+  PLAYER
+}

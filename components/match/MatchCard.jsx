@@ -1,314 +1,155 @@
-// components/match/MatchCard.jsx
-'use client';
-
-import { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { format } from 'date-fns';
-import { MoreHorizontal, Clock, Play, Eye } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+/**
+ * MatchCard component to display a match summary
+ * @param {Object} props
+ * @param {Object} props.match - Match data
+ * @param {boolean} props.isAdmin - Whether the user is an admin
+ */
+const MatchCard = ({ match, isAdmin = false }) => {
+  const isScheduled = match.status === 'scheduled';
+  const isCompleted = match.status === 'completed';
+  const isInProgress = match.status === 'in_progress';
+  const isCancelled = match.status === 'cancelled';
 
-const statusConfig = {
-  SCHEDULED: {
-    label: 'Scheduled',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    icon: Clock,
-  },
-  LIVE: {
-    label: 'Live',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
-    icon: Play,
-  },
-  COMPLETED: {
-    label: 'Completed',
-    color: 'bg-green-500/10 text-green-500 border-green-500/20',
-    icon: null,
-  },
-  CANCELLED: {
-    label: 'Cancelled',
-    color: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-    icon: null,
-  },
-};
+  const getStatusColor = () => {
+    if (isScheduled) return 'bg-blue-900 text-blue-100';
+    if (isInProgress) return 'bg-green-900 text-green-100';
+    if (isCompleted) return 'bg-purple-900 text-purple-100';
+    if (isCancelled) return 'bg-red-900 text-red-100';
+    return 'bg-gray-700 text-gray-100';
+  };
+  
+  const getStatusText = () => {
+    if (isScheduled) return 'Scheduled';
+    if (isInProgress) return 'In Progress';
+    if (isCompleted) return 'Completed';
+    if (isCancelled) return 'Cancelled';
+    return 'Unknown';
+  };
 
-export function MatchCard({ match, compact = false }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  const { team1, team2, tournament, dateTime, status, scoreTeam1, scoreTeam2, matchDetails, vodLink } = match;
-  const StatusIcon = statusConfig[status]?.icon;
-  
-  const formattedDate = format(new Date(dateTime), 'MMM d, yyyy');
-  const formattedTime = format(new Date(dateTime), 'h:mm a');
-  
+  const getDateDisplay = () => {
+    if (!match.scheduledDate) return 'Date TBD';
+    
+    const date = new Date(match.scheduledDate);
+    
+    if (isScheduled) {
+      return (
+        <>
+          <div className="text-sm">{format(date, 'MMM d, yyyy')}</div>
+          <div className="text-xs text-gray-400">{format(date, 'h:mm a')}</div>
+          <div className="text-xs text-gray-500">{formatDistanceToNow(date, { addSuffix: true })}</div>
+        </>
+      );
+    }
+    
+    if (isCompleted && match.completedDate) {
+      const completedDate = new Date(match.completedDate);
+      return (
+        <>
+          <div className="text-sm">{format(completedDate, 'MMM d, yyyy')}</div>
+          <div className="text-xs text-gray-400">{format(completedDate, 'h:mm a')}</div>
+        </>
+      );
+    }
+    
+    return format(date, 'MMM d, yyyy • h:mm a');
+  };
+
+  const getScoreDisplay = () => {
+    if (isCompleted) {
+      return (
+        <div className="flex items-center justify-center space-x-3 font-bold">
+          <span className={match.team1Id === match.winnerId ? "text-green-500" : ""}>{match.team1Score}</span>
+          <span>-</span>
+          <span className={match.team2Id === match.winnerId ? "text-green-500" : ""}>{match.team2Score}</span>
+        </div>
+      );
+    }
+    
+    if (isInProgress) {
+      return (
+        <div className="flex items-center justify-center space-x-3 font-bold">
+          <span>{match.team1Score}</span>
+          <span>-</span>
+          <span>{match.team2Score}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center justify-center font-bold text-gray-500">vs</div>
+    );
+  };
+
   return (
-    <Card className={cn(
-      "overflow-hidden transition-all duration-200 hover:border-purple-500/50",
-      compact ? "border" : "border-2",
-      isExpanded ? "shadow-lg" : ""
-    )}>
-      <CardContent className={cn(
-        "p-0",
-        !compact && "divide-y divide-gray-800"
-      )}>
-        {/* Match Header - Tournament Info */}
-        {!compact && (
-          <div className="px-4 py-3 bg-gray-800/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {tournament?.logo && (
-                <Image
-                  src={tournament.logo}
-                  alt={tournament.name}
-                  width={24}
-                  height={24}
-                  className="rounded-sm"
-                />
-              )}
-              <Link 
-                href={`/tournaments/${tournament.slug}`}
-                className="text-sm font-medium hover:text-purple-400 transition-colors"
-              >
-                {tournament.name}
-              </Link>
-            </div>
-            
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "text-xs font-medium",
-                statusConfig[status]?.color
-              )}
-            >
-              {StatusIcon && <StatusIcon className="w-3 h-3 mr-1" />}
-              {statusConfig[status]?.label}
-            </Badge>
+    <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <span className={`text-xs px-2 py-1 rounded ${getStatusColor()}`}>
+              {getStatusText()}
+            </span>
           </div>
-        )}
-        
-        {/* Teams and Score */}
-        <div className={cn(
-          "px-4 py-3 grid grid-cols-11 gap-2 items-center",
-          compact ? "py-2" : ""
-        )}>
-          {/* Team 1 */}
-          <div className="col-span-4 flex items-center space-x-3 justify-end">
-            <div className="text-right">
-              <Link 
-                href={`/teams/${team1.slug}`}
-                className={cn(
-                  "font-bold hover:text-purple-400 transition-colors block",
-                  compact ? "text-sm" : "text-lg"
-                )}
-              >
-                {team1.name}
-              </Link>
-              {!compact && (
-                <span className="text-xs text-gray-400">
-                  {team1.country}
-                </span>
-              )}
-            </div>
-            <div className="relative h-10 w-10 flex-shrink-0">
-              <Image
-                src={team1.logo || '/images/team-placeholder.png'}
-                alt={team1.name}
-                fill
-                className="object-contain"
-              />
-            </div>
-          </div>
-          
-          {/* Score */}
-          <div className="col-span-3 text-center">
-            {status === 'SCHEDULED' ? (
-              <div>
-                <div className="text-xs text-gray-400">{formattedDate}</div>
-                <div className={cn(
-                  "font-mono font-bold",
-                  compact ? "text-sm" : "text-lg"
-                )}>
-                  {formattedTime}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <div className={cn(
-                  "font-mono font-bold",
-                  compact ? "text-xl" : "text-3xl",
-                  status === 'LIVE' ? "text-red-500" : ""
-                )}>
-                  {scoreTeam1 ?? 0}
-                </div>
-                <div className={cn(
-                  "mx-2 text-gray-500",
-                  compact ? "text-lg" : "text-2xl"
-                )}>:</div>
-                <div className={cn(
-                  "font-mono font-bold",
-                  compact ? "text-xl" : "text-3xl",
-                  status === 'LIVE' ? "text-red-500" : ""
-                )}>
-                  {scoreTeam2 ?? 0}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Team 2 */}
-          <div className="col-span-4 flex items-center space-x-3">
-            <div className="relative h-10 w-10 flex-shrink-0">
-              <Image
-                src={team2.logo || '/images/team-placeholder.png'}
-                alt={team2.name}
-                fill
-                className="object-contain"
-              />
-            </div>
-            <div>
-              <Link 
-                href={`/teams/${team2.slug}`}
-                className={cn(
-                  "font-bold hover:text-purple-400 transition-colors block",
-                  compact ? "text-sm" : "text-lg"
-                )}
-              >
-                {team2.name}
-              </Link>
-              {!compact && (
-                <span className="text-xs text-gray-400">
-                  {team2.country}
-                </span>
-              )}
-            </div>
+          <div className="text-right">
+            {getDateDisplay()}
           </div>
         </div>
         
-        {/* Match Actions */}
-        {!compact && (
-          <div className="px-4 py-3 bg-gray-800/30 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {status === 'SCHEDULED' && (
-                <Button variant="ghost" size="sm" className="text-xs">
-                  Set Reminder
-                </Button>
-              )}
-              
-              {status === 'LIVE' && (
-                <Button size="sm" className="text-xs bg-red-600 hover:bg-red-700">
-                  <Play className="w-3 h-3 mr-1" />
-                  Watch Live
-                </Button>
-              )}
-              
-              {status === 'COMPLETED' && vodLink && (
-                <Button variant="ghost" size="sm" className="text-xs">
-                  <Eye className="w-3 h-3 mr-1" />
-                  Watch VOD
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex items-center">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-xs"
-                onClick={() => setIsExpanded(!isExpanded)}
-              >
-                {isExpanded ? 'Hide Details' : 'Show Details'}
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Link href={`/matches/${match.id}`} className="w-full">
-                      View Details
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>Share</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        <div className="mt-4 flex items-center">
+          <div className="w-5/12 text-right">
+            <Link 
+              href={`/teams/${match.team1?.id}`} 
+              className="text-white hover:text-purple-300 transition-colors duration-200"
+            >
+              <div className="font-semibold">{match.team1?.name}</div>
+            </Link>
           </div>
-        )}
+          
+          <div className="w-2/12 text-center">
+            {getScoreDisplay()}
+          </div>
+          
+          <div className="w-5/12 text-left">
+            <Link 
+              href={`/teams/${match.team2?.id}`} 
+              className="text-white hover:text-purple-300 transition-colors duration-200"
+            >
+              <div className="font-semibold">{match.team2?.name}</div>
+            </Link>
+          </div>
+        </div>
         
-        {/* Expanded Match Details */}
-        {!compact && isExpanded && matchDetails && (
-          <div className="px-4 py-3 bg-gray-900">
-            <h4 className="text-sm font-semibold mb-2">Match Details</h4>
-            
-            {/* Maps Played */}
-            {matchDetails.maps && matchDetails.maps.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {matchDetails.maps.map((map, index) => (
-                  <div key={index} className="bg-gray-800 rounded-md p-2">
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm font-medium">
-                        Map {index + 1}: {map.name}
-                      </div>
-                      <div className="text-sm font-mono">
-                        {map.scoreTeam1} : {map.scoreTeam2}
-                      </div>
-                    </div>
-                    
-                    {map.highlights && (
-                      <div className="mt-1 text-xs text-gray-400">
-                        {map.highlights}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Player Stats */}
-            {matchDetails.playerStats && (
-              <div className="space-y-1">
-                <div className="text-sm font-semibold">Top Performers</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {matchDetails.playerStats.slice(0, 4).map((player, index) => (
-                    <div key={index} className="bg-gray-800/50 rounded p-1 flex items-center space-x-2">
-                      <div className="w-6 h-6 relative">
-                        <Image 
-                          src={player.avatar || '/images/player-placeholder.png'} 
-                          alt={player.name}
-                          fill
-                          className="rounded-full object-cover"
-                        />
-                      </div>
-                      <div className="text-xs">
-                        <div className="font-medium">{player.name}</div>
-                        <div className="text-gray-400">{player.stat}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-xs w-full mt-2"
-                >
-                  View All Stats
-                </Button>
-              </div>
-            )}
+        <div className="mt-4 text-center text-sm text-gray-400">
+          <Link 
+            href={`/tournaments/${match.tournament?.slug}`} 
+            className="hover:text-purple-300 transition-colors duration-200"
+          >
+            {match.tournament?.name}
+          </Link>
+          <span className="mx-2">•</span>
+          <span>Round {match.round}</span>
+          <span className="mx-2">•</span>
+          <span>Match {match.matchNumber}</span>
+        </div>
+      </div>
+      
+      {isAdmin && (
+        <div className="bg-gray-900 px-4 py-2 border-t border-gray-700">
+          <div className="flex justify-end space-x-2">
+            <Link 
+              href={`/admin-new/matches/${match.id}`}
+              className="text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded transition-colors duration-200"
+            >
+              View/Edit
+            </Link>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+export default MatchCard;
